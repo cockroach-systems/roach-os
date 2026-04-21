@@ -1,0 +1,27 @@
+#!/bin/bash
+# mk_user: Create user credential workspace
+# Usage: mk_user <USERNAME> <PASSWORD>
+
+if [ $# -ne 2 ]; then
+    echo "Usage: mk_user <USERNAME> <PASSWORD>"
+    exit 1
+fi
+
+USERNAME="$1"
+PASSWORD="$2"
+
+# Clean username for directory name
+CLEAN_USER=$(echo "$USERNAME" | sed 's/.*\\\\//' | tr -cd '[:alnum:]._-')
+
+echo "[+] Creating user workspace: $CLEAN_USER"
+mkdir -p "$CLEAN_USER"
+
+# Create .envrc with credentials
+cat >"$CLEAN_USER/.envrc" <<EOF
+source_up
+export USER="$USERNAME"
+export PASSWD="$PASSWORD"
+EOF
+
+echo "[+] Done! cd $CLEAN_USER && direnv allow"
+

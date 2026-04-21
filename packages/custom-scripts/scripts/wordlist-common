@@ -1,0 +1,26 @@
+#!/bin/bash
+# Quick access to common wordlists
+# Usage: wordlist-common <type>
+
+case "$1" in
+    "directories"|"dirs")
+        echo "/arsenal/wordlists/Discovery/Web-Content/common.txt"
+        ;;
+    "passwords"|"pass")
+        echo "/arsenal/wordlists/Passwords/Common-Credentials/10-million-password-list-top-1000000.txt"
+        ;;
+    "users"|"usernames")
+        echo "/arsenal/wordlists/Usernames/Names/names.txt"
+        ;;
+    "subdomains"|"subs")
+        echo "/arsenal/wordlists/Discovery/DNS/subdomains-top1million-110000.txt"
+        ;;
+    *)
+        echo "Usage: wordlist-common <type>"
+        echo "Available types:"
+        echo "  directories, dirs    - Common directory wordlist"
+        echo "  passwords, pass      - Common password wordlist"  
+        echo "  users, usernames     - Common username wordlist"
+        echo "  subdomains, subs     - Subdomain wordlist"
+        ;;
+esac

@@ -1,0 +1,76 @@
+#!/bin/bash
+# ffuf-dirs: Directory fuzzing using ffuf with target environment
+# Usage: ffuf-dirs [path_pattern]
+
+set -e
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+# Check for required environment variables
+if [ -z "$TNAME" ] || [ -z "$RHOST" ]; then
+    echo -e "${RED}[!] Error: TNAME and RHOST must be set${NC}"
+    echo "Usage: Run this from a target directory created with mk-target"
+    echo "Example:"
+    echo "  mk-target htb-box 10.10.10.123"
+    echo "  cd htb-box"
+    echo "  direnv allow"
+    echo "  ffuf-dirs"
+    exit 1
+fi
+
+# Create scans directory if it doesn't exist
+mkdir -p scans
+
+# Set default path pattern or use provided one
+PATH_PATTERN="${1:-FUZZ}"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+OUTPUT_FILE="./scans/${TNAME}_ffuf_dirs_${TIMESTAMP}.txt"
+
+echo -e "${GREEN}[+] Starting directory fuzzing on $RHOST${NC}"
+echo -e "${YELLOW}[*] Target: $TNAME${NC}"
+echo -e "${YELLOW}[*] Path pattern: /$PATH_PATTERN${NC}"
+echo -e "${YELLOW}[*] Output: $OUTPUT_FILE${NC}"
+echo ""
+
+# Detect if HTTPS should be used (basic heuristic)
+if [[ "$RHOST" == *":443" ]] || [[ "$RHOST" == "https://"* ]]; then
+    PROTOCOL="https"
+else
+    PROTOCOL="http"
+fi
+
+# Remove protocol prefix if already present
+CLEAN_RHOST=$(echo "$RHOST" | sed 's|^https\?://||')
+
+echo -e "${BLUE}[*] Using protocol: $PROTOCOL${NC}"
+echo ""
+
+# Run ffuf directory scan
+ffuf -u "${PROTOCOL}://${CLEAN_RHOST}/${PATH_PATTERN}" \
+     -c \
+     -w /arsenal/wordlists/Discovery/Web-Content/raft-medium-directories-lowercase.txt \
+     -mc 200,301,302 \
+     -o "$OUTPUT_FILE" \
+     -of txt
+
+echo ""
+echo -e "${GREEN}[+] Directory fuzzing completed!${NC}"
+echo -e "${YELLOW}[*] Output saved to: $OUTPUT_FILE${NC}"
+echo ""
+
+# Show quick summary if output file has content
+if [ -f "$OUTPUT_FILE" ] && [ -s "$OUTPUT_FILE" ]; then
+    echo -e "${GREEN}[+] Found directories:${NC}"
+    grep -E "Status: (200|301|302)" "$OUTPUT_FILE" | head -10 || echo "Check output file for results"
+    
+    TOTAL_FOUND=$(grep -c "Status: " "$OUTPUT_FILE" 2>/dev/null || echo "0")
+    echo ""
+    echo -e "${BLUE}[*] Total directories found: $TOTAL_FOUND${NC}"
+else
+    echo -e "${YELLOW}[*] No directories found or scan still processing${NC}"
+fi

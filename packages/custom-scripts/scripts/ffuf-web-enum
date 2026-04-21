@@ -1,0 +1,57 @@
+#!/bin/bash
+# ffuf-web-enum: Quick ffuf enumeration suite
+# Usage: ffuf-web-enum <RHOST> [PORT] [EXTENSIONS]
+# Example: ffuf-web-enum 192.168.45.100 80 .php,.asp,.txt
+
+if [ $# -lt 1 ]; then
+    echo "Usage: ffuf-web-enum <RHOST> [PORT] [EXTENSIONS]"
+    echo "Example: ffuf-web-enum 192.168.45.100 80 .php,.asp,.txt"
+    exit 1
+fi
+
+RHOST="$1"
+PORT="${2:-80}"
+EXTENSIONS="${3:-.php,.html,.txt}"
+
+# Build URL
+if [ "$PORT" = "443" ]; then
+    URL="https://$RHOST"
+elif [ "$PORT" = "80" ]; then
+    URL="http://$RHOST"
+else
+    URL="http://$RHOST:$PORT"
+fi
+
+OUTDIR="ffuf-$RHOST-$PORT"
+mkdir -p "$OUTDIR"
+
+echo "[*] Target: $URL"
+echo "[*] Extensions: $EXTENSIONS"
+echo "[*] Output: $OUTDIR/"
+echo ""
+
+# Directory enumeration
+echo "[+] Running directory enumeration..."
+ffuf -u "$URL/FUZZ" -c \
+    -w /arsenal/wordlists/Discovery/Web-Content/raft-large-directories.txt \
+    -mc 200,301,302,303 \
+    -o "$OUTDIR/directories.json" -of json 2>/dev/null
+
+# File enumeration
+echo "[+] Running file enumeration..."
+ffuf -u "$URL/FUZZ" -c \
+    -w /arsenal/wordlists/Discovery/Web-Content/raft-large-files-lowercase.txt \
+    -mc 200,301,302 \
+    -e "$EXTENSIONS" \
+    -o "$OUTDIR/files.json" -of json 2>/dev/null
+
+# Words enumeration
+echo "[+] Running words enumeration..."
+ffuf -u "$URL/FUZZ" -c \
+    -w /arsenal/wordlists/Discovery/Web-Content/raft-large-words.txt \
+    -mc 200,301,302,303 \
+    -o "$OUTDIR/words.json" -of json 2>/dev/null
+
+echo ""
+echo "[*] Done! Results in $OUTDIR/"
+ls -la "$OUTDIR/"

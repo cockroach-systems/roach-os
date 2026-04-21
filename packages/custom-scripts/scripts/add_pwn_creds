@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Quick cred saver for engagements - uses TARGET_HOME from direnv
+
+if [ -z "$TARGET_HOME" ]; then
+    echo "[-] TARGET_HOME not set. Are you in a target directory?"
+    exit 1
+fi
+
+if [ $# -lt 2 ]; then
+    echo "usage: add_pwn_creds <user> <pass>"
+    echo "  e.g: add_pwn_creds administrator P@ssw0rd!"
+    exit 1
+fi
+
+USER="$1"
+PASS="$2"
+
+echo "$USER" >> "$TARGET_HOME/users.txt"
+echo "$PASS" >> "$TARGET_HOME/passwords.txt"
+
+echo "[+] Added $USER:$PASS to $TARGET_HOME/{users,passwords}.txt"

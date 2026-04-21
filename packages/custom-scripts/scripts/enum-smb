@@ -1,0 +1,24 @@
+#!/bin/bash
+# SMB enumeration helper script
+# Usage: enum-smb <target>
+
+if [ $# -eq 0 ]; then
+    echo "Usage: enum-smb <target>"
+    echo "Performs comprehensive SMB enumeration"
+    exit 1
+fi
+
+TARGET="$1"
+echo "=== SMB Enumeration for $TARGET ==="
+
+echo "[+] SMB Share enumeration..."
+smbclient -L "//$TARGET" -N
+
+echo "[+] SMB OS Discovery..."
+nmap --script smb-os-discovery "$TARGET"
+
+echo "[+] SMB Security Mode..."
+nmap --script smb-security-mode "$TARGET"
+
+echo "[+] SMB Shares with netexec..."
+netexec smb "$TARGET" --shares
