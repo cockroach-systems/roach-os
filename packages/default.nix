@@ -21,7 +21,6 @@
     rshells = pkgs.callPackage ./rshells {};
     sliver = pkgs.callPackage ./sliver {};
     pspy = pkgs.callPackage ./pspy {};
-    rockyou = pkgs.callPackage ./rockyou {};
     webshells = pkgs.callPackage ./webshells {};
     vulnx = pkgs.callPackage ./vulnx {};
     pywhisker = pkgs.callPackage ./pywhisker {};
@@ -44,7 +43,6 @@
     rshells
     webshells
     seclists
-    rockyou
   ];
 in
   packages
