@@ -22,6 +22,11 @@ stdenv.mkDerivation rec {
   installPhase = ''
     mkdir -p $out/arsenal/wordlists
     cp -r * $out/arsenal/wordlists/
+
+    # extract rockyou for quick access
+    tar -xzf $out/arsenal/wordlists/Passwords/Leaked-Databases/rockyou.txt.tar.gz -C $out/arsenal/wordlists
+
+
   '';
 
   meta = with lib; {
