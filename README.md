@@ -16,57 +16,97 @@ Because life is too short for apt-get....
 
 > That said — current priority is OSCP completion, so OPSEC is not locked down yet
 
+## quickstart
+
+Add the flake to your NixOS config:
+
+```nix
+# flake.nix
+inputs.roachos.url = "github:cockroach-systems/roach-os";
+
+# in your nixosSystem modules list
+roachos.nixosModules.default
+```
+
+Then configure what you need:
+
+```nix
+roachos.user = "youruser";
+
+# enable everything
+roachos.tools.all.enable = true;
+
+# or pick categories
+roachos.tools.active-directory.enable = true;
+roachos.tools.networking.enable = true;
+roachos.tools.exploitation.enable = true;
+
+# services
+roachos.services.sliver.enable = true;
+roachos.services.bloodhound.enable = true;
+```
+
+## tool categories
+
+| Option | What you get |
+|---|---|
+| `tools.all` | everything below |
+| `tools.cracking` | hydra, john, hashcat |
+| `tools.networking` | netcat, socat, wireshark |
+| `tools.web-application` | burpsuite, ffuf |
+| `tools.database-clients` | database client tools |
+| `tools.remote-enumeration` | nmap, netexec |
+| `tools.communication` | email and messaging tools |
+| `tools.remote-access` | rdp, vnc, winrm |
+| `tools.exploitation` | metasploit, exploitdb |
+| `tools.active-directory` | kerbrute, impacket, responder, bloodhound-py |
+| `tools.programming` | languages for exploit dev |
+| `tools.office-tools` | libreoffice |
+| `tools.custom-packages` | arsenal, seclists, mimikatz, ligolo-ng, sliver, godpotato, pspy, vulnx |
+| `tools.nix-shells` | python and python2 nix-shell environments |
+| `tools.other` | miscellaneous tools |
+
+## services
+
+| Option | What you get |
+|---|---|
+| `services.sliver` | Sliver C2 server (systemd) |
+| `services.bloodhound` | BloodHound Community Edition (docker-compose) |
+
 ## deployment model
 
-as a flake that you can pick parts from.
+A flake that you can pick parts from. Headless — not a full GUI experience.
 
-headless. not a full gui blabla experience
-
-I personally run it on a headless vm.
-
-SSH into it with x enabled -- meaning i can still run gui tools no problemo
+I personally run it on a headless VM and SSH into it with X forwarding, meaning I can still run GUI tools no problem.
 
 ## arsenal/binary structure
 
-rather than using the weird, hard to remember paths used by systems such as kali linux we use a mneomic path:
+Rather than using the weird, hard to remember paths used by systems such as Kali, we use a mnemonic path:
 
 ```
 /arsenal
 /arsenal/networking/win/ligolo-agent64.exe
-/arsenal/networking/lin/ligolo-agent64.exe
+/arsenal/networking/lin/ligolo-agent64
 ```
-
-You'll find the binaries in `/arsenal/networking/win/ligolo-agent64.exe` blabla.
-
-More packages will be added as the community suggests them, or I personally add 'em.
 
 ### pre-built binaries
 
-since nix runs on a \*nix system (llinux!!) we can't easily build binaries for windows (logic eh?).
-meaning that some packages such as mimikatz, rubeus and so forth depends on a swappable artifact repo.
+Since Nix runs on Linux we can't easily cross-compile binaries for Windows. Packages such as mimikatz, rubeus etc. depend on a swappable artifact repo.
 
-these packages can be enabled/disabled with a `allowPreBuilt=true/false` flag.
+These packages can be enabled/disabled with:
+
+```nix
+roachos.allowPrebuilt = true;  # default
+```
 
 ### artifact repo
 
-Set the variable to point to ur own artifact repo.
-Otherwise we provide a default one.
-Do note however that this come with OPSEC risks (do you trust a self proclaimed red teamers pre-built binaries?...)
+```nix
+roachos.binaryServer = "http://your-server:8080";
+```
 
-## vpn management
-
-also managed declaratively...
-
-TODO:
-
-## todo
-
-- how do we build binaries and where do we host em?
-- a file server/artifact repo??
-- users should be able to somehow build the binaries from source themselves...
-- the whole arsenal structure is a fkn mess rn
-- find a way to somehow package a windows build server?...
+Set this to point to your own artifact repo. We provide a default, but do note the OPSEC risks — do you trust a self-proclaimed red teamer's pre-built binaries?
 
 ## opsec
 
-something im working on..
+something i'm working on..
