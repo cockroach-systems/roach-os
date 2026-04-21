@@ -1,10 +1,14 @@
-██▀███ ▒█████ ▄▄▄ ▄████▄ ██░ ██
-▓██ ▒ ██▒▒██▒ ██▒▒████▄ ▒██▀ ▀█ ▓██░ ██▒
-▓██ ░▄█ ▒▒██░ ██▒▒██ ▀█▄ ▒▓█ ▄ ▒██▀▀██░
-▒██▀▀█▄ ▒██ ██░░██▄▄▄▄██ ▒▓▓▄ ▄██▒░▓█ ░██
-░██▓ ▒██▒░ ████▓▒░ ▓█ ▓██▒▒ ▓███▀ ░░▓█▒░██▓
-░ ▒▓ ░▒▓░░ ▒░▒░▒░ ▒▒ ▓▒█░░ ░▒ ▒ ░ ▒ ░░▒░▒
-═══════════════════════════════════
+```
+
+   ██▀███   ▒█████   ▄▄▄       ▄████▄   ██░ ██
+  ▓██ ▒ ██▒▒██▒  ██▒▒████▄    ▒██▀ ▀█  ▓██░ ██▒
+  ▓██ ░▄█ ▒▒██░  ██▒▒██  ▀█▄  ▒▓█    ▄ ▒██▀▀██░
+  ▒██▀▀█▄  ▒██   ██░░██▄▄▄▄██ ▒▓▓▄ ▄██▒░▓█ ░██
+  ░██▓ ▒██▒░ ████▓▒░ ▓█   ▓██▒▒ ▓███▀ ░░▓█▒░██▓
+  ░ ▒▓ ░▒▓░░ ▒░▒░▒░  ▒▒   ▓▒█░░ ░▒ ▒  ░ ▒ ░░▒░▒
+           ═══════════════════════════════════
+
+```
 
 Because life is too short for apt-get....
 
@@ -48,29 +52,29 @@ roachos.services.bloodhound.enable = true;
 
 ## tool categories
 
-| Option | What you get |
-|---|---|
-| `tools.all` | everything below |
-| `tools.cracking` | hydra, john, hashcat |
-| `tools.networking` | netcat, socat, wireshark |
-| `tools.web-application` | burpsuite, ffuf |
-| `tools.database-clients` | database client tools |
-| `tools.remote-enumeration` | nmap, netexec |
-| `tools.communication` | email and messaging tools |
-| `tools.remote-access` | rdp, vnc, winrm |
-| `tools.exploitation` | metasploit, exploitdb |
-| `tools.active-directory` | kerbrute, impacket, responder, bloodhound-py |
-| `tools.programming` | languages for exploit dev |
-| `tools.office-tools` | libreoffice |
-| `tools.custom-packages` | arsenal, seclists, mimikatz, ligolo-ng, sliver, godpotato, pspy, vulnx |
-| `tools.nix-shells` | python and python2 nix-shell environments |
-| `tools.other` | miscellaneous tools |
+| Option                     | What you get                                                           |
+| -------------------------- | ---------------------------------------------------------------------- |
+| `tools.all`                | everything below                                                       |
+| `tools.cracking`           | hydra, john, hashcat                                                   |
+| `tools.networking`         | netcat, socat, wireshark                                               |
+| `tools.web-application`    | burpsuite, ffuf                                                        |
+| `tools.database-clients`   | database client tools                                                  |
+| `tools.remote-enumeration` | nmap, netexec                                                          |
+| `tools.communication`      | email and messaging tools                                              |
+| `tools.remote-access`      | rdp, vnc, winrm                                                        |
+| `tools.exploitation`       | metasploit, exploitdb                                                  |
+| `tools.active-directory`   | kerbrute, impacket, responder, bloodhound-py                           |
+| `tools.programming`        | languages for exploit dev                                              |
+| `tools.office-tools`       | libreoffice                                                            |
+| `tools.custom-packages`    | arsenal, seclists, mimikatz, ligolo-ng, sliver, godpotato, pspy, vulnx |
+| `tools.nix-shells`         | python and python2 nix-shell environments                              |
+| `tools.other`              | miscellaneous tools                                                    |
 
 ## services
 
-| Option | What you get |
-|---|---|
-| `services.sliver` | Sliver C2 server (systemd) |
+| Option                | What you get                                  |
+| --------------------- | --------------------------------------------- |
+| `services.sliver`     | Sliver C2 server (systemd)                    |
 | `services.bloodhound` | BloodHound Community Edition (docker-compose) |
 
 ## deployment model
