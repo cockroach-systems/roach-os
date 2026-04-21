@@ -1,12 +1,12 @@
 ```
 
- ▄▄▄▄▄▄      ▄▄▄▄       ▄▄        ▄▄▄▄   ▄▄    ▄▄    ▄▄▄▄      ▄▄▄▄   
- ██▀▀▀▀██   ██▀▀██     ████     ██▀▀▀▀█  ██    ██   ██▀▀██   ▄█▀▀▀▀█  
- ██    ██  ██    ██    ████    ██▀       ██    ██  ██    ██  ██▄      
- ███████   ██    ██   ██  ██   ██        ████████  ██    ██   ▀████▄  
- ██  ▀██▄  ██    ██   ██████   ██▄       ██    ██  ██    ██       ▀██ 
- ██    ██   ██▄▄██   ▄██  ██▄   ██▄▄▄▄█  ██    ██   ██▄▄██   █▄▄▄▄▄█▀ 
- ▀▀    ▀▀▀   ▀▀▀▀    ▀▀    ▀▀     ▀▀▀▀   ▀▀    ▀▀    ▀▀▀▀     ▀▀▀▀▀   
+ ▄▄▄▄▄▄      ▄▄▄▄       ▄▄        ▄▄▄▄   ▄▄    ▄▄    ▄▄▄▄      ▄▄▄▄
+ ██▀▀▀▀██   ██▀▀██     ████     ██▀▀▀▀█  ██    ██   ██▀▀██   ▄█▀▀▀▀█
+ ██    ██  ██    ██    ████    ██▀       ██    ██  ██    ██  ██▄
+ ███████   ██    ██   ██  ██   ██        ████████  ██    ██   ▀████▄
+ ██  ▀██▄  ██    ██   ██████   ██▄       ██    ██  ██    ██       ▀██
+ ██    ██   ██▄▄██   ▄██  ██▄   ██▄▄▄▄█  ██    ██   ██▄▄██   █▄▄▄▄▄█▀
+ ▀▀    ▀▀▀   ▀▀▀▀    ▀▀    ▀▀     ▀▀▀▀   ▀▀    ▀▀    ▀▀▀▀     ▀▀▀▀▀
               ═══════════════════════════════════
 
 ```
@@ -20,6 +20,12 @@ Because life is too short for apt-get....
 - Most tools are built from source to enable auditing
 
 > That said — current priority is OSCP completion, so OPSEC is not locked down yet
+
+## deployment model
+
+A flake that you can pick parts from. Headless — not a full GUI experience.
+
+I personally run it on a headless VM and SSH into it with X forwarding, meaning I can still run GUI tools no problem.
 
 ## quickstart
 
@@ -78,12 +84,6 @@ roachos.services.bloodhound.enable = true;
 | `services.sliver`     | Sliver C2 server (systemd)                    |
 | `services.bloodhound` | BloodHound Community Edition (docker-compose) |
 
-## deployment model
-
-A flake that you can pick parts from. Headless — not a full GUI experience.
-
-I personally run it on a headless VM and SSH into it with X forwarding, meaning I can still run GUI tools no problem.
-
 ## arsenal/binary structure
 
 Rather than using the weird, hard to remember paths used by systems such as Kali, we use a mnemonic path:
@@ -96,7 +96,8 @@ Rather than using the weird, hard to remember paths used by systems such as Kali
 
 ### pre-built binaries
 
-Since Nix runs on Linux we can't easily cross-compile binaries for Windows. Packages such as mimikatz, rubeus etc. depend on a swappable artifact repo.
+Since Nix runs on Linux we can't easily cross-compile binaries for Windows.
+Packages such as mimikatz, rubeus etc. depend on a swappable artifact repo.
 
 These packages can be enabled/disabled with:
 
@@ -110,8 +111,5 @@ roachos.allowPrebuilt = true;  # default
 roachos.binaryServer = "http://your-server:8080";
 ```
 
-Set this to point to your own artifact repo. We provide a default, but do note the OPSEC risks — do you trust a self-proclaimed red teamer's pre-built binaries?
-
-## opsec
-
-something i'm working on..
+Set this to point to your own artifact repo.
+We provide a default, but do note the OPSEC risks — do you trust a self-proclaimed red teamer's pre-built binaries?
