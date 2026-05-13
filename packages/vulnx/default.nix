@@ -5,13 +5,13 @@
 }:
 buildGoModule rec {
   pname = "vulnx";
-  version = "unstable-2025-02-01";
+  version = "unstable-2026-04-02";
 
   src = fetchFromGitHub {
     owner = "projectdiscovery";
-    repo = "cvemap";
-    rev = "main";
-    hash = "sha256-id9czIrS0BhpI94nQibtPOnWJIj+JPj+XgvEgU3cbfU=";
+    repo = "vulnx";
+    rev = "ee62eca9109342531fe5b90f15b1f5b6fe247996";
+    hash = "sha256-5VedtfmPz9ZWO71D9vdjjd+fRG4VvRhb6K8bdfheRXA=";
   };
 
   vendorHash = "sha256-WVskArdIieEof/GDlzEZbY4QDYfAQyP0+Le24q+Kfu0=";
@@ -20,7 +20,7 @@ buildGoModule rec {
 
   meta = with lib; {
     description = "CVE exploration tool by ProjectDiscovery";
-    homepage = "https://github.com/projectdiscovery/cvemap";
+    homepage = "https://github.com/projectdiscovery/vulnx";
     license = licenses.mit;
   };
 }
