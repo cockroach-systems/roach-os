@@ -2,25 +2,47 @@
   lib,
   buildGoModule,
   fetchFromGitHub,
+  go,
+  removeReferencesTo,
 }:
-buildGoModule rec {
+buildGoModule (finalAttrs: {
   pname = "vulnx";
-  version = "unstable-2026-04-02";
+  version = "2.0.1";
 
   src = fetchFromGitHub {
     owner = "projectdiscovery";
     repo = "vulnx";
-    rev = "ee62eca9109342531fe5b90f15b1f5b6fe247996";
-    hash = "sha256-5VedtfmPz9ZWO71D9vdjjd+fRG4VvRhb6K8bdfheRXA=";
+    tag = "v${finalAttrs.version}";
+    hash = "sha256-HejAK/KXpQ9HouA3JpX7MoMzMUoMmKX7eEKwMGfgSx4=";
   };
 
   vendorHash = "sha256-WVskArdIieEof/GDlzEZbY4QDYfAQyP0+Le24q+Kfu0=";
 
-  subPackages = ["cmd/vulnx"];
+  subPackages = ["cmd/vulnx/"];
+
+  ldflags = ["-s" "-w"];
+
+  env.CGO_ENABLED = "0";
+
+  nativeBuildInputs = [removeReferencesTo];
+
+  # 25.05's Go leaves a spurious toolchain path string in the binary; strip it
+  # (Go binaries are static and never need the toolchain at runtime).
+  postInstall = ''
+    remove-references-to -t ${go} "$out/bin/vulnx"
+  '';
+
+  __structuredAttrs = true;
+  strictDeps = true;
+
+  # source-built, not a fetched binary
+  passthru.prebuilt = false;
 
   meta = with lib; {
-    description = "CVE exploration tool by ProjectDiscovery";
+    description = "ProjectDiscovery vulnerability-intelligence CLI (CVE search)";
     homepage = "https://github.com/projectdiscovery/vulnx";
     license = licenses.mit;
+    mainProgram = "vulnx";
+    platforms = platforms.linux;
   };
-}
+})

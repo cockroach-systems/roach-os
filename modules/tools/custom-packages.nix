@@ -11,7 +11,7 @@ in {
     custom-scripts
     sliver
     pspy
-    vulnx
+    autorecon
   ];
 
   # Make arsenal accessible at /arsenal

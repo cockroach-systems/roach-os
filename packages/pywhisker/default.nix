@@ -7,7 +7,7 @@ pkgs.python312Packages.buildPythonApplication rec {
     owner = "ShutdownRepo";
     repo = "pywhisker";
     rev = "main";
-    hash = "sha256-hTY2Ff+LDnyL6l7rovtl/hMhnURkUpeCb+MPplWZk4M=";
+    hash = "sha256-gKsgkM1PLatuBUN/QtSeBO3WtDknidCf6gLkosE4cxQ=";
   };
 
   propagatedBuildInputs = with pkgs.python312Packages; [

@@ -13,14 +13,14 @@ NC='\033[0m'
 
 # Check for required environment variables
 if [ -z "$TNAME" ] || [ -z "$RHOST" ]; then
-    echo -e "${RED}[!] Error: TNAME and RHOST must be set${NC}"
-    echo "Usage: Run this from a target directory created with mk-target"
-    echo "Example:"
-    echo "  mk-target htb-box 10.10.10.123"
-    echo "  cd htb-box"
-    echo "  direnv allow"
-    echo "  nmap-full"
-    exit 1
+  echo -e "${RED}[!] Error: TNAME and RHOST must be set${NC}"
+  echo "Usage: Run this from a target directory created with mk-target"
+  echo "Example:"
+  echo "  mk-target htb-box 10.10.10.123"
+  echo "  cd htb-box"
+  echo "  direnv allow"
+  echo "  nmap-full"
+  exit 1
 fi
 
 # Create scans directory if it doesn't exist
@@ -39,25 +39,25 @@ echo ""
 
 # Determine scan type based on privileges
 if [ "$EUID" -eq 0 ]; then
-    SCAN_TYPE="-sS"
-    echo -e "${GREEN}[+] Running as root - using SYN scan${NC}"
+  SCAN_TYPE="-sS"
+  echo -e "${GREEN}[+] Running as root - using SYN scan${NC}"
 else
-    SCAN_TYPE="-sT"
-    echo -e "${YELLOW}[*] Running as user - using connect scan${NC}"
+  SCAN_TYPE="-sT"
+  echo -e "${YELLOW}[*] Running as user - using connect scan${NC}"
 fi
 
 # Run nmap full port scan
 nmap $SCAN_TYPE \
-    -p- \
-    -sV \
-    -sC \
-    --min-rate=1000 \
-    -T4 \
-    --max-retries=1 \
-    --open \
-    -oN "$NMAP_FILE" \
-    -oX "$XML_FILE" \
-    "$RHOST"
+  -p- \
+  -sV \
+  -sC \
+  --min-rate=1000 \
+  -T4 \
+  --max-retries=1 \
+  --open \
+  -oN "$NMAP_FILE" \
+  -oX "$XML_FILE" \
+  "$RHOST"
 
 echo ""
 echo -e "${GREEN}[+] Full port scan completed!${NC}"
@@ -67,11 +67,46 @@ echo ""
 
 # Show open ports summary
 if grep -q "^[0-9]" "$NMAP_FILE" 2>/dev/null; then
-    echo -e "${GREEN}[+] Open ports found:${NC}"
-    grep -E "^[0-9]+/(tcp|udp)" "$NMAP_FILE" || echo "No detailed port info available"
-    echo ""
-    echo -e "${BLUE}[*] Run nmap-quick for service detection on these ports${NC}"
+  echo -e "${GREEN}[+] Open ports found:${NC}"
+  grep -E "^[0-9]+/(tcp|udp)" "$NMAP_FILE" || echo "No detailed port info available"
+  echo ""
+  echo -e "${BLUE}[*] Run nmap-quick for service detection on these ports${NC}"
 else
-    echo -e "${YELLOW}[*] No open ports found or scan still in progress${NC}"
+  echo -e "${YELLOW}[*] No open ports found or scan still in progress${NC}"
 fi
 
+# Run nmap UDP scan
+echo ""
+echo -e "${GREEN}[+] Starting UDP scan of $RHOST${NC}"
+echo -e "${YELLOW}[*] Target: $TNAME${NC}"
+echo -e "${YELLOW}[*] Output: ${OUTPUT_BASE}_udp.nmap${NC}"
+echo -e "${BLUE}[*] Scanning all 65535 UDP ports${NC}"
+
+UDP_NMAP_FILE="${OUTPUT_BASE}_udp.nmap"
+UDP_XML_FILE="${OUTPUT_BASE}_udp.xml"
+
+nmap -sU \
+  -p- \
+  -sV \
+  -sC \
+  --min-rate=1000 \
+  -T4 \
+  --max-retries=1 \
+  --open \
+  -oN "$UDP_NMAP_FILE" \
+  -oX "$UDP_XML_FILE" \
+  "$RHOST"
+
+echo ""
+echo -e "${GREEN}[+] UDP scan completed!${NC}"
+echo -e "${YELLOW}[*] Normal output: $UDP_NMAP_FILE${NC}"
+echo -e "${YELLOW}[*] XML output: $UDP_XML_FILE${NC}"
+echo ""
+
+# Show UDP open ports summary
+if grep -q "^[0-9]" "$UDP_NMAP_FILE" 2>/dev/null; then
+  echo -e "${GREEN}[+] Open UDP ports found:${NC}"
+  grep -E "^[0-9]+/udp" "$UDP_NMAP_FILE" || echo "No UDP port info available"
+else
+  echo -e "${YELLOW}[*] No open UDP ports found or scan still in progress${NC}"
+fi

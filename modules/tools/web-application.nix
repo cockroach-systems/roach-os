@@ -5,6 +5,8 @@
     whatweb
     git-dumper
     wpscan
+    sqlmap
+    chromium
   ];
 }
 

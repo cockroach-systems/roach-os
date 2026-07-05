@@ -1,4 +1,8 @@
-{pkgs, ...}: {
+{
+  pkgs,
+  custom-packages,
+  ...
+}: {
   environment.systemPackages = with pkgs; [
     nmap
     samba # provides smbclient
@@ -9,7 +13,9 @@
     inetutils # provides ftp
     netexec
     postman
-    # nmp enum
+    custom-packages.vulnx
+    custom-packages.autorecon
+    # snmp enum
     net-snmp
     onesixtyone
   ];

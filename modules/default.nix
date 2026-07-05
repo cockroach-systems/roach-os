@@ -69,7 +69,7 @@ in {
 
       (lib.mkIf (allEnabled || cfg.tools.database-clients.enable) (import ./tools/database-clients.nix {inherit pkgs;}))
 
-      (lib.mkIf (allEnabled || cfg.tools.remote-enumeration.enable) (import ./tools/remote-enumeration.nix {inherit pkgs;}))
+      (lib.mkIf (allEnabled || cfg.tools.remote-enumeration.enable) (import ./tools/remote-enumeration.nix {inherit pkgs custom-packages;}))
 
       (lib.mkIf (allEnabled || cfg.tools.communication.enable) (import ./tools/communication.nix {inherit pkgs;}))
 
@@ -105,7 +105,6 @@ in {
           custom-scripts
           sliver
           pspy
-          vulnx
         ];
         system.activationScripts.arsenal = ''
           ln -sfn ${custom-packages.arsenal}/arsenal /arsenal
@@ -120,5 +119,10 @@ in {
       (lib.mkIf cfg.services.sliver.enable (import ./services/sliver.nix {inherit cfg pkgs custom-packages;}))
 
       (lib.mkIf cfg.services.bloodhound.enable (import ./services/bloodhound.nix {inherit cfg pkgs;}))
+
+      # === Virtualisation (always on) ===
+      # Rootless podman ships in every roach-os build for quick ad-hoc
+      # containers (DB/service spin-ups during engagements).
+      (import ./virtualisation.nix {inherit cfg pkgs lib;})
     ];
 }

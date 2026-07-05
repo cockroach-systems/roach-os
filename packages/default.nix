@@ -22,8 +22,9 @@
     sliver = pkgs.callPackage ./sliver {};
     pspy = pkgs.callPackage ./pspy {};
     webshells = pkgs.callPackage ./webshells {};
-    vulnx = pkgs.callPackage ./vulnx {};
     pywhisker = pkgs.callPackage ./pywhisker {};
+    vulnx = pkgs.callPackage ./vulnx {};
+    autorecon = pkgs.callPackage ./autorecon {};
   };
 
   allowed = pkg: allowPrebuilt || !(pkg.passthru.prebuilt or false);
